@@ -1,0 +1,781 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Queens Puzzle Game</title>
+    <style>
+        :root {
+            --cell-size: 50px; /* Default cell size for larger screens */
+        }
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            background-color: #f0f2f5;
+            padding: 10px;
+            box-sizing: border-box;
+            overflow-x: hidden;
+        }
+        .game-container {
+            text-align: center;
+            background: white;
+            padding: 15px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 600px;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            min-height: 80vh;
+        }
+        .grid {
+            display: grid;
+            gap: 2px;
+            margin: 20px auto;
+            background: #000;
+            padding: 2px;
+            border-radius: 5px;
+            position: relative;
+            width: calc(var(--cell-size) * var(--grid-size) + 2px * (var(--grid-size) + 1));
+            height: calc(var(--cell-size) * var(--grid-size) + 2px * (var(--grid-size) + 1));
+        }
+        .cell {
+            width: var(--cell-size);
+            height: var(--cell-size);
+            background: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: calc(var(--cell-size) * 0.5);
+            transition: background-color 0.2s;
+            touch-action: manipulation;
+        }
+        .cell:hover {
+            background-color: #f5f5f5;
+        }
+        .queen {
+            color: #ff6b6b;
+        }
+        .mark {
+            color: #666;
+        }
+        .invalid {
+            background-color: #ffcccc;
+        }
+        .highlight-row::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background: red;
+            z-index: 1;
+        }
+        .highlight-col::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            height: 100%;
+            width: 2px;
+            background: red;
+            z-index: 1;
+        }
+        .region-1 { background-color: #ffcc99; }
+        .region-2 { background-color: #99ccff; }
+        .region-3 { background-color: #ff9999; }
+        .region-4 { background-color: #99ff99; }
+        .region-5 { background-color: #ffff99; }
+        .region-6 { background-color: #cccccc; }
+        .region-7 { background-color: #cc99cc; }
+        .region-8 { background-color: #999966; }
+        .region-9 { background-color: #ff99cc; }
+        .region-10 { background-color: #66cccc; }
+        .buttons, .level-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin: 10px 0;
+            flex-wrap: wrap;
+        }
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            background-color: #e0e0e0;
+            color: #333;
+            border: none;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            min-width: 80px;
+            touch-action: manipulation;
+        }
+        button:hover {
+            background-color: #d0d0d0;
+        }
+        .level-button {
+            padding: 5px 10px;
+            font-size: 14px;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            min-width: 30px;
+        }
+        .level-button:disabled {
+            background-color: #cccccc;
+            color: #666;
+            cursor: not-allowed;
+        }
+        .level-button:disabled:hover {
+            background-color: #cccccc;
+        }
+        #message {
+            margin-top: 15px;
+            font-size: 16px;
+            color: #333;
+        }
+        .how-to-play {
+            text-align: left;
+            font-size: 14px;
+            margin-top: 20px;
+            color: #333;
+        }
+        .how-to-play h3 {
+            font-size: 16px;
+            margin-bottom: 10px;
+        }
+        .how-to-play p {
+            margin: 5px 0;
+        }
+        #level-display {
+            font-size: 18px;
+            margin-bottom: 10px;
+        }
+        .footer {
+            margin-top: auto;
+            padding: 10px 0;
+            font-size: 14px;
+            color: #666;
+            border-top: 1px solid #ddd;
+        }
+        .footer a {
+            color: #007bff;
+            text-decoration: none;
+        }
+        .footer a:hover {
+            text-decoration: underline;
+        }
+        .popup {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            text-align: center;
+            z-index: 1000;
+            width: 80%;
+            max-width: 300px;
+        }
+        .popup.final {
+            max-width: 400px;
+            padding: 30px;
+            background: linear-gradient(135deg, #ffeb3b, #ff9800);
+            color: #333;
+        }
+        .popup h2 {
+            margin: 0 0 15px;
+            color: #28a745;
+            font-size: 20px;
+        }
+        .popup.final h2 {
+            color: #d81b60;
+            font-size: 24px;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.2);
+        }
+        .popup.final p {
+            font-size: 16px;
+            margin: 10px 0;
+        }
+        .popup button {
+            background-color: #007bff;
+            color: white;
+            font-size: 16px;
+            padding: 10px 20px;
+            margin: 5px;
+        }
+        .popup button:hover {
+            background-color: #0056b3;
+        }
+        .popup.final button {
+            background-color: #d81b60;
+        }
+        .popup.final button:hover {
+            background-color: #b01550;
+        }
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 999;
+        }
+
+        /* Mobile-specific adjustments */
+        @media (max-width: 600px) {
+            .game-container {
+                padding: 10px;
+            }
+            :root {
+                --cell-size: calc(min(80vw, 80vh) / var(--grid-size) - 2px);
+            }
+            button {
+                padding: 8px 16px;
+                font-size: 14px;
+                min-width: 70px;
+            }
+            .level-button {
+                width: 28px;
+                height: 28px;
+                font-size: 12px;
+            }
+            #message {
+                font-size: 14px;
+            }
+            .how-to-play {
+                font-size: 12px;
+            }
+            .how-to-play h3 {
+                font-size: 14px;
+            }
+            #level-display {
+                font-size: 16px;
+            }
+            .footer {
+                font-size: 12px;
+            }
+        }
+
+        @media (max-width: 400px) {
+            :root {
+                --cell-size: calc(min(90vw, 90vh) / var(--grid-size) - 2px);
+            }
+            button {
+                padding: 6px 12px;
+                font-size: 12px;
+                min-width: 60px;
+            }
+            .level-button {
+                width: 24px;
+                height: 24px;
+                font-size: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <h1>Queens Puzzle</h1>
+        <div id="level-display">Level 1</div>
+        <div class="level-buttons" id="level-buttons"></div>
+        <div id="grid" class="grid"></div>
+        <div class="buttons">
+            <button onclick="undoMove()">Undo</button>
+            <button onclick="giveHint()">Hint</button>
+        </div>
+        <div id="message"></div>
+        <div class="how-to-play">
+            <h3>How to play</h3>
+            <p>1. Your goal is to have exactly one 👑 in each row, column, and color region.</p>
+            <p>2. Tap once to place 👑 and tap twice for X. Use X to mark where 👑 cannot be placed.</p>
+            <p>3. Two 👑 cannot touch each other, not even diagonally.</p>
+        </div>
+        <div class="footer">
+            Coded by <a href="https://www.instagram.com/the.webboy" target="_blank">WebBoy🤍</a>
+        </div>
+    </div>
+
+    <script>
+        let currentLevel = 1;
+        let highestLevelUnlocked = parseInt(localStorage.getItem('highestLevelUnlocked')) || 1;
+        const levels = [
+            { size: 4, regions: [
+                [1, 1, 2, 2],
+                [1, 1, 2, 2],
+                [3, 3, 4, 4],
+                [3, 3, 4, 4]
+            ]}, // Level 1: 4x4, 4 regions
+            { size: 4, regions: [
+                [1, 1, 2, 2],
+                [1, 1, 2, 3],
+                [4, 4, 3, 3],
+                [4, 4, 5, 5]
+            ]}, // Level 2: 4x4, 5 regions
+            { size: 5, regions: [
+                [1, 1, 2, 2, 2],
+                [1, 3, 3, 2, 2],
+                [4, 3, 3, 5, 5],
+                [4, 4, 5, 5, 6],
+                [4, 6, 6, 6, 6]
+            ]}, // Level 3: 5x5, 6 regions
+            { size: 5, regions: [
+                [1, 1, 2, 2, 3],
+                [4, 1, 2, 3, 3],
+                [4, 4, 5, 5, 3],
+                [6, 4, 5, 7, 7],
+                [6, 6, 6, 7, 7]
+            ]}, // Level 4: 5x5, 7 regions
+            { size: 6, regions: [
+                [1, 1, 2, 2, 3, 3],
+                [1, 1, 2, 2, 3, 3],
+                [4, 4, 5, 5, 6, 6],
+                [4, 4, 5, 5, 6, 6],
+                [7, 7, 8, 8, 9, 9],
+                [7, 7, 8, 8, 9, 9]
+            ]}, // Level 5: 6x6, 9 regions
+            { size: 6, regions: [
+                [1, 1, 2, 2, 3, 3],
+                [4, 1, 2, 5, 3, 6],
+                [4, 4, 5, 5, 6, 6],
+                [7, 4, 8, 5, 6, 9],
+                [7, 7, 8, 8, 9, 9],
+                [10, 10, 10, 9, 9, 9]
+            ]}, // Level 6: 6x6, 10 regions
+            { size: 7, regions: [
+                [1, 1, 2, 2, 3, 3, 3],
+                [1, 1, 2, 2, 3, 4, 4],
+                [5, 5, 6, 6, 4, 4, 7],
+                [5, 5, 6, 6, 7, 7, 7],
+                [8, 8, 9, 9, 10, 10, 7],
+                [8, 8, 9, 9, 10, 10, 10],
+                [8, 8, 9, 9, 10, 10, 10]
+            ]}, // Level 7: 7x7, 10 regions
+            { size: 7, regions: [
+                [1, 1, 2, 2, 3, 3, 4],
+                [1, 1, 2, 5, 3, 4, 4],
+                [6, 6, 5, 5, 7, 7, 4],
+                [6, 6, 8, 8, 7, 9, 9],
+                [10, 6, 8, 8, 7, 9, 9],
+                [10, 10, 8, 8, 7, 9, 9],
+                [10, 10, 10, 10, 7, 9, 9]
+            ]}, // Level 8: 7x7, 10 regions
+            { size: 8, regions: [
+                [1, 1, 2, 2, 3, 3, 4, 4],
+                [1, 1, 2, 2, 3, 3, 4, 4],
+                [5, 5, 6, 6, 7, 7, 8, 8],
+                [5, 5, 6, 6, 7, 7, 8, 8],
+                [9, 9, 10, 10, 1, 1, 2, 2],
+                [9, 9, 10, 10, 1, 1, 2, 2],
+                [3, 3, 4, 4, 5, 5, 6, 6],
+                [3, 3, 4, 4, 5, 5, 6, 6]
+            ]}, // Level 9: 8x8, 10 regions
+            { size: 8, regions: [
+                [1, 1, 2, 2, 3, 3, 4, 4],
+                [1, 5, 2, 6, 3, 7, 4, 8],
+                [5, 5, 6, 6, 7, 7, 8, 8],
+                [9, 5, 10, 6, 1, 7, 2, 8],
+                [9, 9, 10, 10, 1, 1, 2, 2],
+                [3, 9, 4, 10, 5, 1, 6, 2],
+                [3, 3, 4, 4, 5, 5, 6, 6],
+                [7, 7, 8, 8, 9, 9, 10, 10]
+            ]} // Level 10: 8x8, 10 regions
+        ];
+
+        const grid = document.getElementById('grid');
+        const message = document.getElementById('message');
+        const levelDisplay = document.getElementById('level-display');
+        const levelButtons = document.getElementById('level-buttons');
+        let board = [];
+        let regions = [];
+        let moveHistory = [];
+        let GRID_SIZE = levels[currentLevel - 1].size;
+
+        function initGame(level) {
+            try {
+                if (level > highestLevelUnlocked) {
+                    message.textContent = `You must complete Level ${level - 1} to unlock Level ${level}.`;
+                    return;
+                }
+                currentLevel = level;
+                GRID_SIZE = levels[currentLevel - 1].size;
+                regions = levels[currentLevel - 1].regions;
+                grid.style.setProperty('--grid-size', GRID_SIZE);
+                grid.style.gridTemplateColumns = `repeat(${GRID_SIZE}, var(--cell-size))`;
+                board = Array(GRID_SIZE).fill().map(() => Array(GRID_SIZE).fill(0));
+                moveHistory = [];
+                levelDisplay.textContent = `Level ${currentLevel}`;
+                renderBoard();
+                renderLevelButtons();
+
+                if (!isLevelSolvable()) {
+                    message.textContent = `Level ${currentLevel} is not solvable! Adjusting regions...`;
+                    adjustRegions();
+                    if (!isLevelSolvable()) {
+                        message.textContent = `Level ${currentLevel} remains unsolvable. Please report this issue.`;
+                    } else {
+                        message.textContent = `Level ${currentLevel} regions adjusted and is now solvable.`;
+                    }
+                }
+            } catch (error) {
+                console.error('Error in initGame:', error);
+                message.textContent = 'An error occurred while loading the level. Please refresh the page.';
+            }
+        }
+
+        function renderLevelButtons() {
+            levelButtons.innerHTML = '';
+            for (let i = 1; i <= levels.length; i++) {
+                const btn = document.createElement('button');
+                btn.textContent = i;
+                btn.classList.add('level-button');
+                if (i === currentLevel) {
+                    btn.style.backgroundColor = '#007bff';
+                    btn.style.color = 'white';
+                }
+                if (i > highestLevelUnlocked) {
+                    btn.disabled = true;
+                }
+                btn.addEventListener('click', () => initGame(i));
+                btn.addEventListener('touchstart', (e) => {
+                    e.preventDefault();
+                    initGame(i);
+                });
+                levelButtons.appendChild(btn);
+            }
+        }
+
+        function renderBoard() {
+            try {
+                grid.innerHTML = '';
+                for (let i = 0; i < GRID_SIZE; i++) {
+                    for (let j = 0; j < GRID_SIZE; j++) {
+                        const cell = document.createElement('div');
+                        cell.classList.add('cell', `region-${regions[i][j]}`);
+                        if (board[i][j] === 1) {
+                            cell.textContent = '👑';
+                            cell.classList.add('queen');
+                        } else if (board[i][j] === 2) {
+                            cell.textContent = 'X';
+                            cell.classList.add('mark');
+                        }
+                        cell.dataset.row = i;
+                        cell.dataset.col = j;
+                        cell.addEventListener('click', () => handleCellClick(i, j));
+                        cell.addEventListener('touchstart', (e) => {
+                            e.preventDefault();
+                            handleCellClick(i, j);
+                        });
+                        grid.appendChild(cell);
+                    }
+                }
+                checkValidity();
+                checkWin();
+            } catch (error) {
+                console.error('Error in renderBoard:', error);
+                message.textContent = 'An error occurred while rendering the grid. Please refresh the page.';
+            }
+        }
+
+        function handleCellClick(row, col) {
+            let oldValue = board[row][col];
+            let newValue;
+
+            if (oldValue === 0) newValue = 1; // Place queen
+            else if (oldValue === 1) newValue = 2; // Place X
+            else newValue = 0; // Clear cell
+
+            moveHistory.push({ row, col, oldValue, newValue });
+            board[row][col] = newValue;
+            renderBoard();
+        }
+
+        function undoMove() {
+            if (moveHistory.length === 0) return;
+            const lastMove = moveHistory.pop();
+            board[lastMove.row][lastMove.col] = lastMove.oldValue;
+            renderBoard();
+        }
+
+        function giveHint() {
+            for (let row = 0; row < GRID_SIZE; row++) {
+                let hasQueen = false;
+                for (let col = 0; col < GRID_SIZE; col++) {
+                    if (board[row][col] === 1) {
+                        hasQueen = true;
+                        break;
+                    }
+                }
+                if (!hasQueen) {
+                    for (let col = 0; col < GRID_SIZE; col++) {
+                        if (isSafe(row, col)) {
+                            message.textContent = `Hint: Try placing a queen in row ${row + 1}, column ${col + 1}.`;
+                            return;
+                        }
+                    }
+                }
+            }
+            message.textContent = 'Hint: You’re close! Check for adjacency issues.';
+        }
+
+        function isAdjacent(row1, col1, row2, col2) {
+            const rowDiff = Math.abs(row1 - row2);
+            const colDiff = Math.abs(col1 - col2);
+            return (rowDiff <= 1 && colDiff <= 1);
+        }
+
+        function isSafe(row, col, tempBoard = board) {
+            for (let i = 0; i < GRID_SIZE; i++) {
+                for (let j = 0; j < GRID_SIZE; j++) {
+                    if (tempBoard[i][j] === 1 && (i === row || j === col || isAdjacent(i, j, row, col))) {
+                        return false;
+                    }
+                }
+            }
+            return true;
+        }
+
+        function checkValidity() {
+            let queens = [];
+            let rowCounts = Array(GRID_SIZE).fill(0);
+            let colCounts = Array(GRID_SIZE).fill(0);
+            let adjacentQueens = [];
+
+            const cells = document.querySelectorAll('.cell');
+            cells.forEach(cell => {
+                cell.classList.remove('highlight-row', 'highlight-col');
+                cell.classList.remove('invalid');
+            });
+
+            for (let i = 0; i < GRID_SIZE; i++) {
+                for (let j = 0; j < GRID_SIZE; j++) {
+                    if (board[i][j] === 1) {
+                        queens.push([i, j]);
+                        rowCounts[i]++;
+                        colCounts[j]++;
+                    }
+                }
+            }
+
+            for (let i = 0; i < queens.length; i++) {
+                for (let j = i + 1; j < queens.length; j++) {
+                    if (isAdjacent(queens[i][0], queens[i][1], queens[j][0], queens[j][1])) {
+                        adjacentQueens.push(queens[i], queens[j]);
+                        cells[queens[i][0] * GRID_SIZE + queens[i][1]].classList.add('invalid');
+                        cells[queens[j][0] * GRID_SIZE + queens[j][1]].classList.add('invalid');
+                    }
+                }
+            }
+
+            let hasViolation = false;
+            for (let i = 0; i < GRID_SIZE; i++) {
+                if (rowCounts[i] > 1) {
+                    hasViolation = true;
+                    for (let j = 0; j < GRID_SIZE; j++) {
+                        const cell = cells[i * GRID_SIZE + j];
+                        cell.classList.add('highlight-row');
+                        cell.style.setProperty('--row-offset', `${i * (parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--cell-size')) + 2)}px`);
+                    }
+                }
+                if (colCounts[i] > 1) {
+                    hasViolation = true;
+                    for (let j = 0; j < GRID_SIZE; j++) {
+                        const cell = cells[j * GRID_SIZE + i];
+                        cell.classList.add('highlight-col');
+                        cell.style.setProperty('--col-offset', `${i * (parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--cell-size')) + 2)}px`);
+                    }
+                }
+            }
+
+            adjacentQueens.forEach(([row, col]) => {
+                hasViolation = true;
+                for (let j = 0; j < GRID_SIZE; j++) {
+                    const cellRow = cells[row * GRID_SIZE + j];
+                    cellRow.classList.add('highlight-row');
+                    cellRow.style.setProperty('--row-offset', `${row * (parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--cell-size')) + 2)}px`);
+                    const cellCol = cells[j * GRID_SIZE + col];
+                    cellCol.classList.add('highlight-col');
+                    cellCol.style.setProperty('--col-offset', `${col * (parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--cell-size')) + 2)}px`);
+                }
+            });
+
+            if (!hasViolation) {
+                message.textContent = '';
+            }
+        }
+
+        function checkWin() {
+            let rowCount = Array(GRID_SIZE).fill(0);
+            let colCount = Array(GRID_SIZE).fill(0);
+            let queens = 0;
+
+            for (let i = 0; i < GRID_SIZE; i++) {
+                for (let j = 0; j < GRID_SIZE; j++) {
+                    if (board[i][j] === 1) {
+                        queens++;
+                        rowCount[i]++;
+                        colCount[j]++;
+                    }
+                }
+            }
+
+            const regionSet = new Set();
+            for (let i = 0; i < GRID_SIZE; i++) {
+                for (let j = 0; j < GRID_SIZE; j++) {
+                    regionSet.add(regions[i][j]);
+                }
+            }
+            const numRegions = regionSet.size;
+            let regionCount = Array(numRegions).fill(0);
+
+            for (let i = 0; i < GRID_SIZE; i++) {
+                for (let j = 0; j < GRID_SIZE; j++) {
+                    if (board[i][j] === 1) {
+                        regionCount[regions[i][j] - 1]++;
+                    }
+                }
+            }
+
+            const valid = rowCount.every(c => c === 1) &&
+                          colCount.every(c => c === 1) &&
+                          regionCount.every(c => c > 0) &&
+                          queens === GRID_SIZE &&
+                          document.querySelectorAll('.invalid').length === 0;
+
+            if (valid) {
+                showWinPopup();
+            }
+        }
+
+        function showWinPopup() {
+            const overlay = document.createElement('div');
+            overlay.classList.add('overlay');
+            document.body.appendChild(overlay);
+
+            const popup = document.createElement('div');
+            popup.classList.add('popup');
+            if (currentLevel === levels.length) {
+                popup.classList.add('final');
+                popup.innerHTML = `
+                    <h2>Congratulations! 🎉</h2>
+                    <p>You Used Your Brain Better Than the Average Person on Earth! 🧠✨</p>
+                    <button onclick="restartGame()">Play Again</button>
+                `;
+            } else {
+                popup.innerHTML = `
+                    <h2>You Won! 🎉</h2>
+                    <button onclick="goToNextLevel()">Next Level</button>
+                `;
+            }
+            document.body.appendChild(popup);
+
+            if (currentLevel === highestLevelUnlocked && currentLevel < levels.length) {
+                highestLevelUnlocked = currentLevel + 1;
+                localStorage.setItem('highestLevelUnlocked', highestLevelUnlocked);
+                renderLevelButtons();
+            }
+        }
+
+        function goToNextLevel() {
+            const popup = document.querySelector('.popup');
+            const overlay = document.querySelector('.overlay');
+            if (popup) popup.remove();
+            if (overlay) overlay.remove();
+
+            if (currentLevel < levels.length) {
+                initGame(currentLevel + 1);
+            }
+        }
+
+        function restartGame() {
+            const popup = document.querySelector('.popup');
+            const overlay = document.querySelector('.overlay');
+            if (popup) popup.remove();
+            if (overlay) overlay.remove();
+
+            highestLevelUnlocked = 1;
+            localStorage.setItem('highestLevelUnlocked', highestLevelUnlocked);
+            initGame(1);
+        }
+
+        function isLevelSolvable() {
+            let tempBoard = Array(GRID_SIZE).fill().map(() => Array(GRID_SIZE).fill(0));
+            return solveQueens(tempBoard, 0);
+        }
+
+        function solveQueens(tempBoard, row) {
+            if (row === GRID_SIZE) {
+                const regionSet = new Set();
+                for (let i = 0; i < GRID_SIZE; i++) {
+                    for (let j = 0; j < GRID_SIZE; j++) {
+                        regionSet.add(regions[i][j]);
+                    }
+                }
+                const numRegions = regionSet.size;
+                let regionCount = Array(numRegions).fill(0);
+
+                for (let i = 0; i < GRID_SIZE; i++) {
+                    for (let j = 0; j < GRID_SIZE; j++) {
+                        if (tempBoard[i][j] === 1) {
+                            regionCount[regions[i][j] - 1]++;
+                        }
+                    }
+                }
+
+                return regionCount.every(c => c > 0);
+            }
+
+            for (let col = 0; col < GRID_SIZE; col++) {
+                if (isSafe(row, col, tempBoard)) {
+                    tempBoard[row][col] = 1;
+                    if (solveQueens(tempBoard, row + 1)) {
+                        return true;
+                    }
+                    tempBoard[row][col] = 0;
+                }
+            }
+
+            return false;
+        }
+
+        function adjustRegions() {
+            let newRegions = Array(GRID_SIZE).fill().map(() => Array(GRID_SIZE).fill(0));
+            let regionNum = 1;
+            let cellsPerRegion = Math.floor((GRID_SIZE * GRID_SIZE) / (GRID_SIZE - 1));
+
+            let currentCount = 0;
+            for (let i = 0; i < GRID_SIZE; i++) {
+                for (let j = 0; j < GRID_SIZE; j++) {
+                    newRegions[i][j] = regionNum;
+                    currentCount++;
+                    if (currentCount >= cellsPerRegion && regionNum < GRID_SIZE) {
+                        regionNum++;
+                        currentCount = 0;
+                    }
+                }
+            }
+
+            for (let i = 0; i < GRID_SIZE; i++) {
+                for (let j = 0; j < GRID_SIZE; j++) {
+                    if (newRegions[i][j] === 0) {
+                        newRegions[i][j] = regionNum;
+                    }
+                }
+            }
+
+            regions = newRegions;
+            levels[currentLevel - 1].regions = newRegions;
+        }
+
+        initGame(1);
+    </script>
+</body>
+</html>

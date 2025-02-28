@@ -7,6 +7,7 @@
     <style>
         :root {
             --cell-size: 50px; /* Default cell size for larger screens */
+            --grid-size: 4; /* Default grid size */
         }
         body {
             font-family: Arial, sans-serif;
@@ -41,8 +42,9 @@
             padding: 2px;
             border-radius: 5px;
             position: relative;
-            width: calc(var(--cell-size) * var(--grid-size) + 2px * (var(--grid-size) + 1));
-            height: calc(var(--cell-size) * var(--grid-size) + 2px * (var(--grid-size) + 1));
+            /* Let the grid size naturally based on cell size */
+            width: auto;
+            height: auto;
         }
         .cell {
             width: var(--cell-size);
@@ -86,16 +88,16 @@
             background: red;
             z-index: 1;
         }
-        .region-1 { background-color: #ffcc99; }
-        .region-2 { background-color: #99ccff; }
-        .region-3 { background-color: #ff9999; }
-        .region-4 { background-color: #99ff99; }
-        .region-5 { background-color: #ffff99; }
-        .region-6 { background-color: #cccccc; }
-        .region-7 { background-color: #cc99cc; }
+        .region-1 { background-color: #cf8439; }
+        .region-2 { background-color: #3a87d3; }
+        .region-3 { background-color: #c83d3d; }
+        .region-4 { background-color: #47cd47; }
+        .region-5 { background-color: #dada36; }
+        .region-6 { background-color: #f2eded; }
+        .region-7 { background-color: #c260c2; }
         .region-8 { background-color: #999966; }
-        .region-9 { background-color: #ff99cc; }
-        .region-10 { background-color: #66cccc; }
+        .region-9 { background-color: #d05090; }
+        .region-10 { background-color: #35c1c1; }
         .buttons, .level-buttons {
             display: flex;
             justify-content: center;
@@ -236,7 +238,7 @@
                 padding: 10px;
             }
             :root {
-                --cell-size: calc(min(80vw, 80vh) / var(--grid-size) - 2px);
+                --cell-size: clamp(30px, calc(min(80vw, 80vh) / var(--grid-size) - 2px), 50px);
             }
             button {
                 padding: 8px 16px;
@@ -267,7 +269,7 @@
 
         @media (max-width: 400px) {
             :root {
-                --cell-size: calc(min(90vw, 90vh) / var(--grid-size) - 2px);
+                --cell-size: clamp(25px, calc(min(90vw, 90vh) / var(--grid-size) - 2px), 50px);
             }
             button {
                 padding: 6px 12px;
@@ -408,7 +410,7 @@
                 currentLevel = level;
                 GRID_SIZE = levels[currentLevel - 1].size;
                 regions = levels[currentLevel - 1].regions;
-                grid.style.setProperty('--grid-size', GRID_SIZE);
+                document.documentElement.style.setProperty('--grid-size', GRID_SIZE);
                 grid.style.gridTemplateColumns = `repeat(${GRID_SIZE}, var(--cell-size))`;
                 board = Array(GRID_SIZE).fill().map(() => Array(GRID_SIZE).fill(0));
                 moveHistory = [];
